@@ -44,7 +44,7 @@ example.useequivalence(productid.value)
 // listing 3-3
 
 class orderedarray<T> {
-    private items: T[] = []
+    public items: T[] = []
 
     constructor(private comparer?: (a: T, b: T) => number) {
 
@@ -55,7 +55,26 @@ class orderedarray<T> {
         this.items.sort(this.comparer)
     }
 
-    getitem() {
-        
+    getitem(index: number): T | null | undefined {
+        if (this.items.length > index) {
+            return this.items[index]
+        }
+        return null
+    }
+
+    getitems(): T[] {
+        return this.items
     }
 }
+
+var orderedarray1: orderedarray<number> = new orderedarray<number>()
+
+// console.log(orderedarray1)
+orderedarray1.add(3)
+orderedarray1.add(5)
+
+// console.log(orderedarray1.items)
+// console.log(orderedarray1.getitems())
+
+var firstitem: number | null | undefined = orderedarray1.getitem(0)
+console.log(firstitem)
