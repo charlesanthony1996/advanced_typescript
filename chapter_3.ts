@@ -143,3 +143,79 @@ let x = [0, 1, null]
 // (string | number)
 let y = [0, 1, null, 'a']
 
+
+
+// contextual types
+
+// listing 3-7 contextual types
+
+// window.onclick = function(event) {
+//     var button = event.button
+// }
+
+// listing 3-8 widened types
+
+function example2() {
+    return null
+}
+
+var widened = example2()
+
+
+// type checking
+
+// listing 3-11
+
+function acceptnumber(input: number) {
+    return input
+}
+
+// number
+acceptnumber(1)
+
+// enum
+// acceptnumber(Size.Xl)
+
+// null
+// acceptnumber(null)
+
+
+// listing 3-12
+
+// class c1 {
+//     name: string
+
+//     show(hint?: string) {
+//         return 1
+//     }
+// }
+
+class c2 {
+    constructor(public name: string) {
+
+    }
+
+    show(hint: string = 'default') {
+        return Math.floor(Math.random() * 10)
+    }
+}
+
+// class c3 {
+//     name: string
+
+//     show() {
+//         return <any> 'Dynamic'
+//     }
+// }
+
+var T4 = {
+    name: '',
+    show() {
+        return 1
+    }
+}
+
+// var c11 = new c1()
+
+
+
