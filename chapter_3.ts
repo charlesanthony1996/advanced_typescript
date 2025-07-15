@@ -73,8 +73,40 @@ var orderedarray1: orderedarray<number> = new orderedarray<number>()
 orderedarray1.add(3)
 orderedarray1.add(5)
 
-// console.log(orderedarray1.items)
-// console.log(orderedarray1.getitems())
+console.log(orderedarray1.items)
+console.log(orderedarray1.getitems())
 
 var firstitem: number | null | undefined = orderedarray1.getitem(0)
 console.log(firstitem)
+
+// listing 3-4 compiled js code
+
+var orderedarray2 = (function () {
+    function orderedarray(this: any, comparer: any) {
+        this.comparer = comparer
+        this.items = []
+    }
+
+    orderedarray.prototype.add = function (item: any) {
+        this.items.push(item)
+        this.items.sort(this.comparer)
+    }
+
+    orderedarray.prototype.getitem = function(index: any) {
+        if (this.items.length > index) {
+            return this.items[index]
+        }
+        return null
+    }
+    return orderedarray
+}())
+
+var orderedarray3 = new orderedarray()
+orderedarray3.add(7)
+orderedarray3.add(9)
+
+console.log(orderedarray3.items)
+
+var firstitem1 = orderedarray3.getitem(0)
+console.log(firstitem1)
+
