@@ -110,3 +110,36 @@ console.log(orderedarray3.items)
 var firstitem1 = orderedarray3.getitem(0)
 console.log(firstitem1)
 
+
+// listing 3-5
+
+function add(a: number, b: number) {
+    return a + b
+}
+
+interface classfunction {
+    (cb: (result: string) => any): void
+}
+
+var callsfunction: classfunction = function (cb) {
+    cb('Done')
+
+    // error here. wrong type
+    // cb(1)
+}
+
+// the result parameter is inferred to be a string
+callsfunction(function (result) {
+    return result
+})
+
+// best common type
+
+// listing 3-6 best common types
+
+// number []
+let x = [0, 1, null]
+
+// (string | number)
+let y = [0, 1, null, 'a']
+
