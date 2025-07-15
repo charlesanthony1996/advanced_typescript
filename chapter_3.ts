@@ -216,6 +216,12 @@ var T4 = {
 }
 
 // var c11 = new c1()
+var c12 = new c2('A name')
+// var c13 = new c3()
 
+var arr: c2[] = [c12]
 
-
+for (var i = 0; i < arr.length; i++) {
+    arr[i].show
+    console.log(arr[i].show)
+}
