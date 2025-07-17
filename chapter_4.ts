@@ -87,3 +87,103 @@ const fundsRaised = totalizer.getAmountRaised()
 console.log(fundsRaised)
 
 // listing 4-3 delegation
+
+interface ControlPanel {
+    startAlarm(message: string): any
+}
+
+interface Sensor {
+    check(): any
+}
+
+class MasterControlPanel {
+    private sensors: Sensor[] = []
+
+    constructor() {
+        this.sensors.push(new HeatSensor(this))
+    }
+
+    start() {
+        for (let sensor of this.sensors) {
+            sensor.check()
+        }
+
+        // window.setTimeout(() => this.start(), 1000)
+        setTimeout(() => this.start(), 1000)
+
+    }
+
+    startAlarm(message: string) {
+        console.log('Alarm! ' + message)
+    }
+}
+
+class HeatSensor {
+    private upperLimit = 38
+    private sensor = {
+        read: function() {
+            return Math.floor(Math.random() * 100)
+        }
+    }
+
+    constructor(private controlPanel: ControlPanel) {
+    }
+
+    check() {
+        if (this.sensor.read() > this.upperLimit) {
+            this.controlPanel.startAlarm('Overheating')
+        }
+    }
+}
+
+const controlPanel = new MasterControlPanel()
+
+// controlPanel.start()
+
+// listing 4-4 polymorphism
+
+interface Vehicle {
+    moveTo(x: number, y: number): void
+}
+
+// explicit interface implementation
+
+class Car implements Vehicle {
+    constructor() {
+    }
+
+    moveTo(x: number, y: number) {
+        console.log('Driving to ' + x + ' ' + y)
+    }
+}
+
+class SportsCar extends Car {
+
+}
+
+class Airplane {
+    moveTo(x: number, y: number) {
+        console.log('Flying to ' + x + ' ' + y)
+    }
+}
+
+class Satellite {
+    moveTo(x: number) {
+        console.log('Targeting ' + x)
+    }
+}
+
+function navigate(vehicle: Vehicle) {
+    vehicle.moveTo(59.9437, 10.71874)
+}
+
+
+const car = new SportsCar()
+navigate(car)
+
+const airplane = new Airplane()
+navigate(airplane)
+
+const satellite = new Satellite()
+navigate(satellite)
+
