@@ -187,3 +187,30 @@ navigate(airplane)
 const satellite = new Satellite()
 navigate(satellite)
 
+// listing 4-5 single responsibility principle 
+
+// class Movie {
+//     private db: DataBase
+
+//     constructor(private title: string, private year: number) {
+//         this.db = DataBase.connect('user:pw@mydb', ['movies'])
+//     }
+
+//     getTitle() {
+//         return this.title + '(' + this.year + ')'
+//     }
+
+//     save() {
+//         this.db.movies.save({ title: this.title, year: this.year })
+//     }
+// }
+
+// const movie = new Movie('This Internship', 2013)
+
+// movie.save()
+
+// listing 4-6 seperating reasons for change
+
+class Movie {
+    
+}
