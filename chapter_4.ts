@@ -211,6 +211,48 @@ navigate(satellite)
 
 // listing 4-6 seperating reasons for change
 
-class Movie {
-    
+// class Movie {
+//     constructor(private title: string, private year: number) {
+//     }
+
+//     getTitle() {
+//         return this.title + '(' + this.year + ')'
+//     }
+// }
+
+// class MovieRepository {
+//     private db: Database;
+
+//     constructor() {
+//         this.db = Database.connect('user:pw@mydb', ['movies'])
+//     }
+
+//     save(movie: Movie) {
+//         this.db.movies.save(JSON.stringify(movie))
+//     }
+// }
+
+// const movie = new Movie('The internship', 2013)
+
+// const movieRepository = new MovieRepository()
+
+// movieRepository.save(movie)
+
+// listing 4-7 open closed principle
+
+class RewardPointsCalculator {
+    getPoints(transactionValue: number) {
+        return Math.floor(transactionValue) * 4
+    }
 }
+
+class DoublePointsCalculator extends RewardPointsCalculator {
+    getPoints(transactionValue: number) {
+        const standardPoints = super.getPoints(transactionValue)
+        return standardPoints * 2
+    }
+}
+
+const pointsCalculator = new DoublePointsCalculator()
+console.log(pointsCalculator.getPoints(100.2))
+
