@@ -256,3 +256,138 @@ class DoublePointsCalculator extends RewardPointsCalculator {
 const pointsCalculator = new DoublePointsCalculator()
 console.log(pointsCalculator.getPoints(100.2))
 
+
+// listing 4-9 printer interface
+
+// interface Printer {
+//     copyDocument()
+//     printDocument(document: Document)
+//     stapleDocument(document: Document, tray: number)
+// }
+
+// abstract factory design pattern
+
+// listing 4-13 wheel cleaning
+
+interface WheelCleaning {
+    cleanWheels(): void
+}
+
+class BasicWheelCleaning implements WheelCleaning {
+    cleanWheels() {
+        console.log('Soaping wheel')
+        console.log('Brushing wheel')
+    }
+}
+
+class ExecutiveWheelCleaning extends BasicWheelCleaning {
+    cleanWheels() {
+        super.cleanWheels()
+        console.log('Waxing wheel')
+        console.log('Rinsing wheel')
+    }
+}
+
+// listing 4-14 body cleaning
+interface BodyCleaning {
+    cleanBody(): void
+}
+
+class BasicBodyCleaning implements BodyCleaning {
+    cleanBody() {
+        console.log('Soaping car')
+        console.log('Rinsing car')
+    }
+}
+
+class ExecutiveBodyCleaning extends BasicBodyCleaning {
+    cleanBody() {
+        super.cleanBody()
+        console.log('Waxing car')
+        console.log('Blow drying car')
+    }
+}
+
+
+class CarWashProgram {
+    constructor(private washLevel: number) {
+
+    }
+
+    runWash() {
+        let wheelWash: WheelCleaning
+        let bodyWash: BodyCleaning
+
+        switch (this.washLevel) {
+            case 1:
+                wheelWash = new BasicWheelCleaning()
+                wheelWash.cleanWheels()
+
+                bodyWash = new BasicBodyCleaning()
+                bodyWash.cleanBody()
+
+                break
+
+            case 2:
+                wheelWash = new BasicWheelCleaning()
+                wheelWash.cleanWheels()
+
+                bodyWash = new ExecutiveBodyCleaning()
+                bodyWash.cleanBody()
+
+                break
+
+            case 3:
+                wheelWash = new ExecutiveWheelCleaning()
+                wheelWash.cleanWheels()
+
+                bodyWash = new ExecutiveBodyCleaning()
+                bodyWash.cleanBody()
+
+                break
+        }
+    }
+}
+
+
+// listing 4-16 abstract factory
+
+interface ValetFactory {
+    getWheelCleaning() : WheelCleaning
+    getBodyCleaning() : BodyCleaning
+}
+
+// listing 4-17 concrete fantasies
+
+class BronzeWashFactory implements ValetFactory {
+    getWheelCleaning() {
+        return new BasicWheelCleaning()
+    }
+
+    getBodyCleaning() {
+        return new BasicBodyCleaning()
+    }
+}
+
+class SilverWashFactory implements ValetFactory {
+    getWheelCleaning() {
+        return new BasicWheelCleaning()
+    }
+
+    getBodyCleaning() {
+        return new ExecutiveBodyCleaning()
+    }
+}
+
+class GoldWashFactory implements ValetFactory {
+    getWheelCleaning() {
+        return new ExecutiveWheelCleaning()
+    }
+
+    getBodyCleaning() {
+        return new ExecutiveBodyCleaning()
+    }
+}
+
+
+
