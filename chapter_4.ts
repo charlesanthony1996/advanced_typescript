@@ -406,3 +406,39 @@ class CarWashProgram2 {
 }
 
 
+// listing 4-19 mixing enabler function
+
+function applyMixins(derivedCtor: any, baseCtors: any[]) {
+    baseCtors.forEach(baseCtor => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+            derivedCtor.prototype[name] = baseCtor.prototype[name]
+        })
+    })
+}
+
+// example use below
+
+class CanFly {
+    fly() {
+        console.log("Flying")
+    }
+}
+
+class CanSwim {
+    swim() {
+        console.log("Swimming")
+    }
+}
+
+class Animal {}
+
+interface Animal extends CanFly, CanSwim {
+
+}
+
+applyMixins(Animal, [CanFly, CanSwim])
+
+const duck = new Animal()
+duck.fly()
+duck.swim()
+
