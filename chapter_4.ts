@@ -389,5 +389,20 @@ class GoldWashFactory implements ValetFactory {
     }
 }
 
+// listing 4-18 abstract pattern factory in use
+
+class CarWashProgram2 {
+    constructor(private cleaningFactory: ValetFactory) {
+
+    }
+
+    runWash() {
+        const wheelWash = this.cleaningFactory.getWheelCleaning()
+        wheelWash.cleanWheels()
+
+        const bodyWash = this.cleaningFactory.getBodyCleaning()
+        bodyWash.cleanBody()
+    }
+}
 
 
