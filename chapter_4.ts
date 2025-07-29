@@ -443,7 +443,7 @@ duck.fly()
 duck.swim()
 
 
-// listing 4-20
+// listing 4-20 reusable classes
 
 class Sings {
     sing() {
@@ -460,6 +460,95 @@ class Dances {
 class Acts {
     act() {
         console.log("Acting")
+    }
+}
+
+// listing 4-21 composing classes
+
+class Actor implements Acts {
+    act!: () => void
+}
+
+applyMixins(Actor, [Acts])
+
+class AllRounder implements Acts, Sings, Dances {
+    act!: () => void
+    dance!: () => void
+    sing!: () => void
+}
+
+applyMixins(AllRounder, [Acts, Dances, Sings])
+
+// listing 4-22 using the classes
+
+const actor = new Actor()
+actor.act()
+
+const allRounder = new AllRounder()
+allRounder.act()
+allRounder.dance()
+allRounder.sing()
+
+
+
+// listing 4-23 properties not mapped
+
+class Acts2 {
+    public message = 'Acting'
+
+    act() {
+        console.log(this.message)
+    }
+}
+
+class Actor2 implements Acts2 {
+    public message!: string
+    act!: () => void
+}
+
+applyMixins(Actor2, [Acts2])
+const actor2 = new Actor2()
+
+
+actor.act()
+
+// listing 4-24 static properties are available
+
+class Acts3 {
+    public static message = 'Acting'
+
+    act() {
+        console.log(Acts3.message)
+    }
+}
+
+class Actor3 implements Acts3 {
+    act!: () => void
+}
+
+applyMixins(Actor3, [Acts3])
+
+const actor3 = new Actor3()
+
+actor3.act()
+
+
+// listing 4-25 real mixins
+
+type Constructor<T = {}> = new (...args: any[]) => T
+
+function Acts4<TBase extends Constructor>(Base: TBase) {
+    return class extends Base {
+        message: string = 'Acting'
+        act() {
+            console.log(this.message)
+        }
+    }
+}
+
+class Person {
+    constructor(private name: string) {
+        
     }
 }
 
