@@ -375,3 +375,75 @@ Promise.race([
 
 
 // listing 5-28 xml http request
+
+// const request = new XMLHttpRequest()
+
+// request.onload = function() {
+//     if (request.status != 200) {
+//         console.log('Status code: ', request.status)
+//         return
+//     }
+
+//     const data = JSON.parse(request.responseText)
+//     console.log(data)
+// }
+
+// request.onerror = (error) => {
+//     // network 
+//     console.log('error making request: ', error)
+// }
+
+// request.open('get', './api/musketeers.json', true)
+// request.send()
+
+// listing 5-29 fetch api
+
+fetch('./api/musketeers.json')
+.then((response) => {
+    if (response.status !== 200) {
+        console.log('Status code: ', response.status)
+        return
+    }
+}).then((data) => {
+    console.log(data)
+}).catch((error) => {
+    console.log(error)
+})
+
+// listing 5-30 event listeners
+
+class ClickLogger {
+    constructor() {
+        document.addEventListener('click', this.eventListener)
+    }
+
+    eventListener(e: Event) {
+        const phase = e.eventPhase
+        const tag = (<HTMLElement>e.target).tagName
+        console.log("Click")
+    }
+}
+
+// listing 5-31 cross browser events
+
+function addEventCrossBrowser(element: any, eventName : any, listener: any) {
+    if (element.addEventListener) {
+        element.addEventListener(eventName, listener, false)
+    } else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, listener)
+    }
+}
+
+class ClickLogger1 {
+    constructor() {
+        addEventCrossBrowser(document, 'click', this.eventListener)
+    }
+
+    eventListener(e: Event) {
+        const phase = e.eventPhase
+        const tag = (<HTMLElement>e.target).tagName
+        console.log('Click event detected on element ' + tag + 'by clicklogger')
+    }
+}
+
+// const clickLogger = new ClickLogger()
