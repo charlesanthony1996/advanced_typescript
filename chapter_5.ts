@@ -447,3 +447,91 @@ class ClickLogger1 {
 }
 
 // const clickLogger = new ClickLogger()
+
+// listing 5-33 custom events
+
+// (function () {
+//     function customEvent(event, params) {
+//         params = params || { bubbles: false, cancelable: false, detail: undefined }
+//         const evt = <any>document.createEvent('CustomEvent')
+
+//         evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail)
+//         return evt
+
+//     }
+
+//     CustomEvent.prototype = (<any>window).Event.prototype
+
+//     (<any>window).CustomEvent = CustomEvent
+// })()
+
+
+// listing 5-34 extending the prototype
+
+// NodeList.prototype.each = function (callback) {
+//     for (let node of this) {
+//         callback.call(node)
+//     }
+// }
+
+// const getparagraphtext = function() {
+//     console.log(this.innerHTML)
+// }
+
+// const paragraphs = document.querySelectorAll('p')
+// paragraphs.each(getparagraphtext)
+
+// listing 5-35 extending objects in typescript
+
+// interface NodeList {
+//     each(callback: () => any): void
+// }
+
+// NodeList.prototype.each = function(callback) {
+//     for (let node of this) {
+//         callback.call(node)
+//     }
+// }
+
+// const getparagraphtext = function() {
+//     console.log(this.innerHTML)
+// }
+
+// const paragraphs = document.querySelectorAll('p')
+// paragraphs.each(getparagraphtext)
+
+
+// listing 5-36 improved typescript object extensions
+
+// interface NodeList {
+//     each(callback: (element: HTMLElement) => any): void
+// }
+
+// interface NodeListOf<TNode extends Node> {
+//     each(callback: (element: TNode) => any): void
+// }
+
+// NodeList.prototype.each = function (callback: (elem: HTMLElement) => any) {
+//     for (let node of this) {
+//         callback.call(node, node)
+//     }
+// }
+
+// const getparagraphtext1 = function (elem: HTMLParagraphElement) {
+//     console.log(elem.innerHTML)
+// }
+
+
+// listing 5-37 turning an extension into a polyfill
+
+// if (!NodeList.prototype.each) {
+//     NodeList.prototype.each = function(callback: (elem: HTMLElement)=> any) {
+//         for (let node of this) {
+//             callback.call(node, node)
+//         }
+//     }
+// }
+
+// sealing objects
+
+// listing 5-38 extended instance
