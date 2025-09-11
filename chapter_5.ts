@@ -398,17 +398,17 @@ Promise.race([
 
 // listing 5-29 fetch api
 
-fetch('./api/musketeers.json')
-.then((response) => {
-    if (response.status !== 200) {
-        console.log('Status code: ', response.status)
-        return
-    }
-}).then((data) => {
-    console.log(data)
-}).catch((error) => {
-    console.log(error)
-})
+// fetch('./api/musketeers.json')
+// .then((response) => {
+//     if (response.status !== 200) {
+//         console.log('Status code: ', response.status)
+//         return
+//     }
+// }).then((data) => {
+//     console.log(data)
+// }).catch((error) => {
+//     console.log(error)
+// })
 
 // listing 5-30 event listeners
 
@@ -535,3 +535,43 @@ class ClickLogger1 {
 // sealing objects
 
 // listing 5-38 extended instance
+
+class Lemur1 {
+    constructor(public name: string) {
+
+    }
+}
+
+const lemur1 = new Lemur1("Sloth lemur1")
+console.log("This is the name " + lemur1.name)
+
+// new property
+// lemur1.isExtinct = true
+
+// console.log(lemur1.isExtinct)
+
+// listing 5-39 sealing an instance
+
+class Lemur2 {
+    constructor(public name: string) {
+
+    }
+}
+
+const lemur2 = new Lemur2("Sloth lemur2")
+
+// new property
+// lemur2.isExtinct = true
+
+// // undefined
+// console.log(lemur2.isExtinct)
+
+// listing 5-40 using the native class list
+
+// const elem = document.getElementById("example")
+// console.log(elem.classList)
+
+
+
+// listing 5-41 class-list polyfill
+
