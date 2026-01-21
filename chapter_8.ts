@@ -188,3 +188,29 @@ console.log(result.totalruntime + ' ms')
 
 import { Performance } from './performance1'
 
+class Communicationlines3 {
+    calculate(teamsize: number) {
+        return (teamsize * (teamsize - 1)) / 2
+    }
+}
+
+function testcommunicationlines3() {
+    const communicationlines = new Communicationlines3()
+
+    let result = communicationlines.calculate(4)
+
+    if (result !== 6) {
+        throw new Error("Test failed for team size of 4")
+    }
+
+    result = communicationlines.calculate(10)
+
+    if (result !== 45) {
+        throw new Error('Test failed for team size of 10')
+    }
+}
+
+const result4 = Performance.run(testcommunicationlines3)
+
+console.log("the total time: ", result4.totalruntime + 'ms')
+
