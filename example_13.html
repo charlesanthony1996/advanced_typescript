@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Light nuIT 2D Profile Editor</title>
+<style>
+  body {
+    margin: 0;
+    background: #111;
+    overflow: hidden;
+    color: white;
+    font-family: system-ui;
+  }
+  #hud {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    background: rgba(0,0,0,0.7);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="hud">
+  <b>Light nuIT 2D Profile Editor</b><br/>
+  Click to add points<br/>
+  Drag points to move<br/>
+  Snaps to grid + nearest point<br/>
+  Press <code>B</code> to fold 90°<br/>
+  Press <code>R</code> to reset<br/>
+</div>
+
+<script>
+/* -------------------------------------------------------------
+   Basic canvas setup
+------------------------------------------------------------- */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let W = window.innerWidth;
+let H = window.innerHeight;
+canvas.width = W;
+canvas.height = H;
+
+window.addEventListener("resize", () => {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+});
+
+/* -------------------------------------------------------------
+   Data structures (similar to nuIT)
+------------------------------------------------------------- */
+let points = [];      // {x, y, id}
+let lines = [];       // {a, b} index of points
+let basePoints = [];  // used for bending
+let bendAngle = 0;    // radians
+let targetAngle = 0;
+let bending = false;
+
+/* -------------------------------------------------------------
+   Simple snapping
+------------------------------------------------------------- */
+const GRID = 20;
+const SNAP_DIST = 15;
+
+function snapToGrid(p) {
+  return {
+    x: Math.round(p.x / GRID) * GRID,
+    y: Math.round(p.y / GRID) * GRID
+  };
+}
+
+function snapToExistingPoint(p) {
+  for (const q of points) {
+    const d = Math.hypot(q.x - p.x, q.y - p.y);
+    if (d < SNAP_DIST) return {x: q.x, y: q.y};
+  }
+  return p;
+}
+
+function applySnapping(p) {
+  p = snapToGrid(p);
+  p = snapToExistingPoint(p);
+  return p;
+}
+
+/* -------------------------------------------------------------
+   Geometry utilities
+------------------------------------------------------------- */
+function addPoint(p) {
+  p = applySnapping(p);
+  points.push({x: p.x, y: p.y, id: "p" + points.length});
+  if (points.length > 1) {
+    lines.push({a: points.length - 2, b: points.length - 1});
+  }
+}
+
+function cloneBasePoints() {
+  basePoints = points.map(p => ({x: p.x, y: p.y}));
+}
+
+/* -------------------------------------------------------------
+   Bending animation (2D)
+   Bends around the first point (pivot)
+------------------------------------------------------------- */
+function bendUpdate(dt) {
+  if (Math.abs(bendAngle - targetAngle) < 0.001) return;
+
+  const speed = Math.PI; // rad/s
+  const dir = bendAngle < targetAngle ? 1 : -1;
+  bendAngle += dir * speed * dt;
+
+  if (dir > 0 && bendAngle > targetAngle) bendAngle = targetAngle;
+  if (dir < 0 && bendAngle < targetAngle) bendAngle = targetAngle;
+
+  // Rotate all points AFTER the first one
+  const px = basePoints[0].x;
+  const py = basePoints[0].y;
+
+  for (let i = 1; i < points.length; i++) {
+    const bx = basePoints[i].x - px;
+    const by = basePoints[i].y - py;
+    const rx = bx * Math.cos(bendAngle) - by * Math.sin(bendAngle);
+    const ry = bx * Math.sin(bendAngle) + by * Math.cos(bendAngle);
+    points[i].x = rx + px;
+    points[i].y = ry + py;
+  }
+}
+
+/* -------------------------------------------------------------
+   Dragging
+------------------------------------------------------------- */
+let dragPoint = null;
+
+canvas.addEventListener("mousedown", e => {
+  const m = {x: e.clientX, y: e.clientY};
+
+  // Check if we clicked a point
+  for (const p of points) {
+    if (Math.hypot(m.x - p.x, m.y - p.y) < 10) {
+      dragPoint = p;
+      return;
+    }
+  }
+
+  // Otherwise add a new point
+  addPoint(m);
+  cloneBasePoints();
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!dragPoint) return;
+  const p = applySnapping({x: e.clientX, y: e.clientY});
+  dragPoint.x = p.x;
+  dragPoint.y = p.y;
+  cloneBasePoints();
+});
+
+canvas.addEventListener("mouseup", () => dragPoint = null);
+
+/* -------------------------------------------------------------
+   Key controls
+------------------------------------------------------------- */
+window.addEventListener("keydown", e => {
+  if (e.key === "b" || e.key === "B") {
+    bending = !bending;
+    targetAngle = bending ? -Math.PI/2 : 0;
+    cloneBasePoints();
+  }
+  if (e.key === "r" || e.key === "R") {
+    points = [...basePoints.map(p => ({...p}))];
+    bendAngle = targetAngle = 0;
+  }
+});
+
+/* -------------------------------------------------------------
+   Drawing
+------------------------------------------------------------- */
+function drawGrid() {
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x < W; x += GRID) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  for (let y = 0; y < H; y += GRID) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+}
+
+function drawLines() {
+  ctx.strokeStyle = "#0ff";
+  ctx.lineWidth = 2;
+
+  for (const l of lines) {
+    const a = points[l.a];
+    const b = points[l.b];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+}
+
+function drawPoints() {
+  for (const p of points) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+    ctx.strokeStyle = "#000";
+    ctx.stroke();
+  }
+}
+
+/* -------------------------------------------------------------
+   Animation loop
+------------------------------------------------------------- */
+let last = performance.now();
+function loop(now) {
+  const dt = (now - last) / 1000;
+  last = now;
+
+  bendUpdate(dt);
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawLines();
+  drawPoints();
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>

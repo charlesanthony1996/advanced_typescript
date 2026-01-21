@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Light nuIT Editor – Three.js Prototype</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: #111;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #eee;
+    }
+    #nuCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #hud {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 280px;
+      pointer-events: none;
+    }
+    #hud h1 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #hud code {
+      padding: 1px 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="nuCanvas"></canvas>
+  <div id="hud">
+    <h1>Light nuIT Editor (Three.js)</h1>
+    <div>
+      <strong>Camera</strong><br/>
+      • Drag with mouse to orbit<br/>
+      • Scroll to zoom<br/>
+      • Right-click + drag to pan
+    </div>
+    <br/>
+    <div>
+      <strong>Actions</strong><br/>
+      • Click on sheet to add <em>punch</em><br/>
+      • Punch positions snap to grid<br/>
+      • Press <code>B</code> to toggle bend animation<br/>
+      • Press <code>R</code> to reset sheet
+    </div>
+  </div>
+
+  <script type="module">
+    // --- Three.js CDN imports (ES modules) ---
+    // import * as THREE from "https://unpkg.com/three@0.164.0/build/three.module.js";
+    // import { OrbitControls } from "https://unpkg.com/three@0.164.0/examples/jsm/controls/OrbitControls.js";
+    import * as THREE from 'https://esm.sh/three@0.164.0';
+import { OrbitControls } from 'https://esm.sh/three@0.164.0/examples/jsm/controls/OrbitControls.js';
+
+  // Your entire code below (unchanged) ...
+
+    // -------------------------------------------------------------
+    // nuEvent (very small equivalent)
+    // -------------------------------------------------------------
+    class NuEvent {
+      constructor() {
+        this.listeners = [];
+      }
+      on(listener) {
+        this.listeners.push(listener);
+        return () => this.off(listener);
+      }
+      off(listener) {
+        const i = this.listeners.indexOf(listener);
+        if (i >= 0) this.listeners.splice(i, 1);
+      }
+      emit(data) {
+        for (const fn of [...this.listeners]) {
+          fn(data);
+        }
+      }
+      clear() {
+        this.listeners.length = 0;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // NuEngine – minimal nuEngine + nuBabylonService + render loop
+    // -------------------------------------------------------------
+    class NuEngine {
+      constructor(canvas) {
+        this.canvas = canvas;
+
+        // Scene + renderer
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x151515);
+
+        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Camera + controls (nuCamera + nuCameraService)
+        const aspect = window.innerWidth / window.innerHeight;
+        this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
+        this.camera.position.set(4, 4, 6);
+
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+
+        // Events
+        this.beforeRender = new NuEvent();
+        this.afterRender = new NuEvent();
+
+        // Resize handling
+        window.addEventListener("resize", () => this.onResize());
+
+        // Raycaster for picking
+        this.raycaster = new THREE.Raycaster();
+        this.pointer = new THREE.Vector2();
+
+        // Simple clock
+        this.clock = new THREE.Clock();
+
+        this._running = false;
+      }
+
+      onResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+      }
+
+      start() {
+        if (this._running) return;
+        this._running = true;
+        const loop = () => {
+          if (!this._running) return;
+          const dt = this.clock.getDelta();
+          this.controls.update();
+          this.beforeRender.emit({ engine: this, dt });
+          this.renderer.render(this.scene, this.camera);
+          this.afterRender.emit({ engine: this, dt });
+          requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+      }
+
+      stop() {
+        this._running = false;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Punching – minimal nuPunchingService-like
+    // -------------------------------------------------------------
+    class NuPunchingService {
+      constructor(engine) {
+        this.engine = engine;
+        this.punches = [];
+        this.onPunchAdded = new NuEvent();
+        this.gridSize = 0.25; // meters
+      }
+
+      snapToGrid(point) {
+        const s = this.gridSize;
+        const snapped = point.clone();
+        snapped.x = Math.round(snapped.x / s) * s;
+        snapped.z = Math.round(snapped.z / s) * s;
+        // keep y unchanged (on sheet surface)
+        return snapped;
+      }
+
+      addPunch(worldPoint) {
+        const p = this.snapToGrid(worldPoint);
+
+        const radius = 0.06;
+        const height = 0.02;
+        const geom = new THREE.CylinderGeometry(radius, radius, height, 16);
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xffcc00,
+          emissive: 0x221100,
+          metalness: 0.6,
+          roughness: 0.3
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.rotation.x = Math.PI / 2; // lying flat on the sheet
+        mesh.position.copy(p);
+        mesh.position.y += height / 2 + 0.001;
+
+        this.engine.scene.add(mesh);
+
+        const data = { mesh, position: p.clone() };
+        this.punches.push(data);
+        this.onPunchAdded.emit(data);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Simplified bending controller – like a tiny nuPlaylistController
+    // -------------------------------------------------------------
+    class NuBendController {
+      constructor(engine, sheetMesh) {
+        this.engine = engine;
+        this.sheetMesh = sheetMesh;
+
+        // We "bend" by rotating vertices on one side of a bend line.
+        // For simplicity, we:
+        //  - Clone geometry into a BufferGeometry
+        //  - Keep original positions as base
+        //  - Animate rotation around a virtual hinge line at z = 0
+        const geom = sheetMesh.geometry;
+        geom.computeBoundingBox();
+
+        this.basePositions = geom.attributes.position.array.slice(); // Float32Array -> copy
+        this.targetAngle = 0;       // radians
+        this.currentAngle = 0;      // radians
+        this.speed = Math.PI / 3;   // rad/s
+
+        // z=0 is the virtual bend line
+        this.bendZ = 0;
+        this.enabled = false;
+
+        // run update per frame
+        engine.beforeRender.on(({ dt }) => this.update(dt));
+      }
+
+      toggleBend() {
+        this.enabled = !this.enabled;
+        // targetAngle is 90° fold when enabled, 0° when disabled
+        this.targetAngle = this.enabled ? -Math.PI / 2 : 0;
+      }
+
+      reset() {
+        this.enabled = false;
+        this.targetAngle = 0;
+        this.currentAngle = 0;
+        // reset geometry
+        const geom = this.sheetMesh.geometry;
+        const pos = geom.attributes.position;
+        const base = this.basePositions;
+        for (let i = 0; i < base.length; i++) {
+          pos.array[i] = base[i];
+        }
+        pos.needsUpdate = true;
+        geom.computeVertexNormals();
+      }
+
+      update(dt) {
+        if (Math.abs(this.currentAngle - this.targetAngle) < 1e-3) return;
+
+        const sign = this.currentAngle < this.targetAngle ? 1 : -1;
+        const delta = this.speed * dt * sign;
+        this.currentAngle += delta;
+
+        // Clamp
+        if (sign > 0 && this.currentAngle > this.targetAngle) this.currentAngle = this.targetAngle;
+        if (sign < 0 && this.currentAngle < this.targetAngle) this.currentAngle = this.targetAngle;
+
+        const geom = this.sheetMesh.geometry;
+        const pos = geom.attributes.position;
+        const base = this.basePositions;
+
+        const angle = this.currentAngle;
+        const cosA = Math.cos(angle);
+        const sinA = Math.sin(angle);
+
+        // For vertices with z > bendZ: rotate around x axis at z = bendZ
+        for (let i = 0; i < pos.count; i++) {
+          const bx = base[i * 3 + 0];
+          const by = base[i * 3 + 1];
+          const bz = base[i * 3 + 2];
+
+          if (bz > this.bendZ) {
+            const dz = bz - this.bendZ;
+            const ry = by * cosA - dz * sinA;
+            const rz = by * sinA + dz * cosA + this.bendZ;
+
+            pos.array[i * 3 + 0] = bx;
+            pos.array[i * 3 + 1] = ry;
+            pos.array[i * 3 + 2] = rz;
+          } else {
+            // Unaffected region
+            pos.array[i * 3 + 0] = bx;
+            pos.array[i * 3 + 1] = by;
+            pos.array[i * 3 + 2] = bz;
+          }
+        }
+
+        pos.needsUpdate = true;
+        geom.computeVertexNormals();
+      }
+    }
+
+    // -------------------------------------------------------------
+    // NuEditorApp – glues everything (like nuBridgeService)
+    // -------------------------------------------------------------
+    class NuEditorApp {
+      constructor(canvas) {
+        this.engine = new NuEngine(canvas);
+
+        // Basic lighting
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x222222, 0.7);
+        this.engine.scene.add(hemi);
+
+        const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+        dir.position.set(5, 10, 7);
+        this.engine.scene.add(dir);
+
+        // Grid + sheet (profile)
+        const grid = new THREE.GridHelper(10, 40, 0x444444, 0x222222);
+        grid.rotation.x = Math.PI / 2; // align to XZ
+        this.engine.scene.add(grid);
+
+        // const sheetWidth = 6;
+        // const sheetLength = 3;
+        // const sheetGeom = new THREE.PlaneGeometry(sheetWidth, sheetLength, 30, 15);
+        // const sheetMat = new THREE.MeshStandardMaterial({
+        //   color: 0x555f6b,
+        //   metalness: 0.8,
+        //   roughness: 0.2,
+        //   side: THREE.DoubleSide
+        // });
+        // this.sheet = new THREE.Mesh(sheetGeom, sheetMat);
+        // this.sheet.rotation.x = -Math.PI / 2; // make it lie on XZ plane
+        // this.sheet.position.y = 0;
+        // this.sheet.receiveShadow = true;
+        // this.sheet.castShadow = false;
+        // this.engine.scene.add(this.sheet);
+
+        const sheetWidth = 6;
+const sheetLength = 3;
+const segmentsX = 60;
+const segmentsZ = 30;
+
+const sheetGeom = new THREE.PlaneGeometry(sheetWidth, sheetLength, segmentsX, segmentsZ);
+sheetGeom.rotateX(-Math.PI / 2); // rotate to lie flat
+
+// CRITICAL: Make position attribute dynamic/writable
+const positions = sheetGeom.attributes.position.array.slice(); // copy
+sheetGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+sheetGeom.attributes.position.setUsage(THREE.DynamicDrawUsage); // ← This is the key!
+
+const sheetMat = new THREE.MeshStandardMaterial({
+  color: 0x555f6b,
+  metalness: 0.8,
+  roughness: 0.2,
+  side: THREE.DoubleSide
+});
+
+this.sheet = new THREE.Mesh(sheetGeom, sheetMat);
+this.sheet.position.y = 0;
+this.sheet.receiveShadow = true;
+this.engine.scene.add(this.sheet);
+
+        // Small line showing the "bend" axis (z=0)
+        const bendLineGeom = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-sheetWidth / 2, 0.001, 0),
+          new THREE.Vector3(sheetWidth / 2, 0.001, 0)
+        ]);
+        const bendLineMat = new THREE.LineBasicMaterial({ color: 0xff6666 });
+        const bendLine = new THREE.Line(bendLineGeom, bendLineMat);
+        this.engine.scene.add(bendLine);
+
+        // Services
+        this.punchingService = new NuPunchingService(this.engine);
+        this.bendController = new NuBendController(this.engine, this.sheet);
+
+        // Raycast interactions
+        this._setupPicking();
+
+        // Keybindings
+        window.addEventListener("keydown", (e) => this.onKeyDown(e));
+
+        // Start engine
+        this.engine.start();
+      }
+
+      _setupPicking() {
+        const canvas = this.engine.renderer.domElement;
+
+        canvas.addEventListener("pointerdown", (event) => {
+          // Normalized device coordinates
+          const rect = canvas.getBoundingClientRect();
+          const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+          const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+          this.engine.pointer.set(x, y);
+          this.engine.raycaster.setFromCamera(this.engine.pointer, this.engine.camera);
+
+          const intersects = this.engine.raycaster.intersectObject(this.sheet);
+          if (intersects.length > 0) {
+            const hit = intersects[0];
+            const point = hit.point;
+            // Add punch
+            this.punchingService.addPunch(point);
+          }
+        });
+      }
+
+      onKeyDown(event) {
+        if (event.code === "KeyB") {
+          this.bendController.toggleBend();
+        } else if (event.code === "KeyR") {
+          this.bendController.reset();
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Bootstrap
+    // -------------------------------------------------------------
+    const canvas = document.getElementById("nuCanvas");
+    const app = new NuEditorApp(canvas);
+    // (app is unused outside, but you could expose it as window.nuApp = app;)
+  </script>
+</body>
+</html>
