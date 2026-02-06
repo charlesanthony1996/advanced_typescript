@@ -214,3 +214,33 @@ const result4 = Performance.run(testcommunicationlines3)
 
 console.log("the total time: ", result4.totalruntime + 'ms')
 
+// listing 8-12 running the performance test with exceptions
+
+// import { Performance  } from './performance1'
+
+class Communicationlines4 {
+    calculate(teamSize: number) {
+        return (teamSize * (teamSize - 1)) / 2
+    }
+}
+
+function testcommunicationlines4() {
+    const communicationlines = new Communicationlines4()
+
+    let result = communicationlines.calculate(4)
+
+    if (result !== 7) {
+        throw new Error("Test failed for team size of 4")
+    }
+
+    result = communicationlines.calculate(10)
+
+    if (result !== 45) {
+        throw new Error("Test failed for team size of 10")
+    }
+}
+
+const result5 = Performance.run(testcommunicationlines)
+
+console.log(result4.totalruntime + ' ms')
+
